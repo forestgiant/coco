@@ -17,8 +17,10 @@ var (
 )
 
 func main() {
+	// Channel for when function is done
 	exit := make(chan bool)
 
+	// Quick valildation
 	if contentDirectory == "" {
 		fmt.Println("Please provide a content directory")
 		os.Exit(1)

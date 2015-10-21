@@ -56,9 +56,7 @@ func main() {
 
 					fileName := splitName[0]
 
-					cleanedName, _ := cleanName(fileName)
-
-					fmt.Println(cleanedName)
+					// cleanedName, _ := cleanName(fileName)
 
 					header := "+++ \n date = \"" + string(file.ModTime().Format(time.UnixDate)) + "\" \n title = \"" + fileName + "\" \n+++"
 
@@ -93,13 +91,13 @@ func main() {
 	fmt.Println("All Done =]")
 }
 
-func cleanName(name string) (string, error) {
-	wordLength := len(name)
+// func cleanName(name string) (string, error) {
+// 	wordLength := len(name)
 
-	for i := 0; i < wordLength; i++ {
-		letter := string([]rune(name)[i])
-		fmt.Println(letter)
-	}
+// 	for i := 0; i < wordLength; i++ {
+// 		letter := string([]rune(name)[i])
+// 		fmt.Println(letter)
+// 	}
 
-	return "", nil
-}
+// 	return "", nil
+// }

@@ -11,12 +11,11 @@ import (
 	"unicode"
 )
 
-var (
-	contentDirectory     = os.Args[1]
-	hugoContentDirectory = os.Args[2]
-)
-
 func main() {
+
+	contentDirectory := os.Args[1]
+	hugoContentDirectory := os.Args[2]
+
 	// Channel for when function is done
 	exit := make(chan bool)
 

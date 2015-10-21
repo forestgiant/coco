@@ -17,6 +17,8 @@ var (
 )
 
 func main() {
+	exit := make(chan bool)
+
 	if contentDirectory == "" {
 		fmt.Println("Please provide a content directory")
 		os.Exit(1)
@@ -33,74 +35,80 @@ func main() {
 	if err != nil {
 		fmt.Println(err)
 	}
-	// Loop through each folder
-	for _, folder := range folders {
-		if folder.IsDir() {
-			// Open the indexed folder and get all the files inside of it
-			fullFolderPath := filepath.Join(contentDirectory, folder.Name())
-			hugoContentFolderPath := filepath.Join(hugoContentDirectory, folder.Name())
 
-			// create the hugo folder if it doesn't exist
-			err := os.MkdirAll(hugoContentFolderPath, 0777)
-			if err != nil {
-				fmt.Println(err)
-			}
+	go func() {
+		// Loop through each folder
+		for _, folder := range folders {
+			if folder.IsDir() {
+				// Open the indexed folder and get all the files inside of it
+				fullFolderPath := filepath.Join(contentDirectory, folder.Name())
+				hugoContentFolderPath := filepath.Join(hugoContentDirectory, folder.Name())
 
-			// get all the files inside the indexed folder
-			files, err := ioutil.ReadDir(fullFolderPath)
-			if err != nil {
-				fmt.Println(err)
-			}
+				// create the hugo folder if it doesn't exist
+				err := os.MkdirAll(hugoContentFolderPath, 0777)
+				if err != nil {
+					fmt.Println(err)
+				}
 
-			for _, file := range files {
-				if !file.IsDir() {
-					splitName := strings.Split(file.Name(), ".")
+				// get all the files inside the indexed folder
+				files, err := ioutil.ReadDir(fullFolderPath)
+				if err != nil {
+					fmt.Println(err)
+				}
 
-					fileName := splitName[0]
+				for _, file := range files {
+					if !file.IsDir() {
+						splitName := strings.Split(file.Name(), ".")
 
-					cleanedName := addSpace(fileName)
+						fileName := splitName[0]
 
-					header := "+++ \n date = \"" + string(file.ModTime().Format(time.UnixDate)) + "\" \n title = \"" + cleanedName + "\" \n+++"
+						cleanedName := addSpace(fileName)
 
-					indexedFilePath := filepath.Join(fullFolderPath, file.Name())
+						header := "+++ \n date = \"" + string(file.ModTime().Format(time.UnixDate)) + "\" \n title = \"" + cleanedName + "\" \n+++"
 
-					readFile, err := ioutil.ReadFile(indexedFilePath)
-					if err != nil {
-						fmt.Println(err)
-					}
+						indexedFilePath := filepath.Join(fullFolderPath, file.Name())
 
-					concatFile := header + "\n \n" + string(readFile)
+						readFile, err := ioutil.ReadFile(indexedFilePath)
+						if err != nil {
+							fmt.Println(err)
+						}
 
-					tmpFilePath := filepath.Join(folder.Name(), file.Name())
-					fullFilePath := filepath.Join(hugoContentDirectory, tmpFilePath)
+						concatFile := header + "\n \n" + string(readFile)
 
-					// create the file
-					_, err = os.Create(fullFilePath)
-					if err != nil {
-						fmt.Println(err)
-					}
+						tmpFilePath := filepath.Join(folder.Name(), file.Name())
+						fullFilePath := filepath.Join(hugoContentDirectory, tmpFilePath)
 
-					// write the file
-					err = ioutil.WriteFile(fullFilePath, []byte(concatFile), 0644)
-					if err != nil {
-						fmt.Println(err)
+						// create the file
+						_, err = os.Create(fullFilePath)
+						if err != nil {
+							fmt.Println(err)
+						}
+
+						// write the file
+						err = ioutil.WriteFile(fullFilePath, []byte(concatFile), 0644)
+						if err != nil {
+							fmt.Println(err)
+						}
 					}
 				}
 			}
 		}
-	}
+
+		exit <- true
+	}()
+
+	<-exit
 
 	fmt.Println("All Done =]")
 }
 
 func addSpace(s string) string {
 	buf := &bytes.Buffer{}
-	for _, rune := range s {
-		if unicode.IsUpper(rune) {
+	for i, rune := range s {
+		if unicode.IsUpper(rune) && i > 0 {
 			buf.WriteRune(' ')
 		}
 		buf.WriteRune(rune)
 	}
-	b := bytes.TrimSpace(buf.Bytes())
-	return string(b)
+	return buf.String()
 }

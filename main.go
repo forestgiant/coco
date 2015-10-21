@@ -42,7 +42,7 @@ func main() {
 		for _, folder := range folders {
 			if folder.IsDir() {
 				// Open the indexed folder and get all the files inside of it
-				fullFolderPath := filepath.Join(contentDirectory, folder.Name())
+				indexedFolderPath := filepath.Join(contentDirectory, folder.Name())
 				hugoContentFolderPath := filepath.Join(hugoContentDirectory, folder.Name())
 
 				// create the hugo folder if it doesn't exist
@@ -52,7 +52,7 @@ func main() {
 				}
 
 				// get all the files inside the indexed folder
-				files, err := ioutil.ReadDir(fullFolderPath)
+				files, err := ioutil.ReadDir(indexedFolderPath)
 				if err != nil {
 					fmt.Println(err)
 				}
@@ -68,7 +68,7 @@ func main() {
 						header := "+++ \n date = \"" + string(file.ModTime().Format(time.UnixDate)) + "\" \n title = \"" + sanitizedTitle + "\" \n+++"
 
 						// Get the file path and read it
-						indexedFilePath := filepath.Join(fullFolderPath, file.Name())
+						indexedFilePath := filepath.Join(indexedFolderPath, file.Name())
 						readFile, err := ioutil.ReadFile(indexedFilePath)
 						if err != nil {
 							fmt.Println(err)

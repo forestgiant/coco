@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -10,7 +11,13 @@ func TestAddSpace(t *testing.T) {
 
 	testString := addSpace(originalString)
 
+	// check for spaces
+	stringSpaces := strings.Split(testString, " ")
+	if len(stringSpaces) < 2 {
+		t.Fatalf("String not spaced")
+	}
+
 	if spacedString != testString {
-		t.Error("String not spaced")
+		t.Fatalf("String does not match expected output")
 	}
 }

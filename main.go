@@ -1,34 +1,33 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
+	"time"
 )
 
 var (
-	contentDirectory     = flag.String("cf", "", "The content directory")
-	hugoContentDirectory = flag.String("hf", "", "Hugo directory")
+	contentDirectory     = os.Args[1]
+	hugoContentDirectory = os.Args[2]
 )
 
 func main() {
-	flag.Parse()
-
-	if *contentDirectory == "" {
+	if contentDirectory == "" {
 		fmt.Println("Please provide a content directory")
 		os.Exit(1)
 	}
 
-	if *hugoContentDirectory == "" {
+	if hugoContentDirectory == "" {
 		fmt.Println("Please provide a hugo content directory")
 		os.Exit(1)
 	}
 
 	// Get the content direcotry
 	// Get all of the folders inside of it
-	folders, err := ioutil.ReadDir(*contentDirectory)
+	folders, err := ioutil.ReadDir(contentDirectory)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -36,8 +35,8 @@ func main() {
 	for _, folder := range folders {
 		if folder.IsDir() {
 			// Open the indexed folder and get all the files inside of it
-			fullFolderPath := filepath.Join(*contentDirectory, folder.Name())
-			hugoContentFolderPath := filepath.Join(*hugoContentDirectory, folder.Name())
+			fullFolderPath := filepath.Join(contentDirectory, folder.Name())
+			hugoContentFolderPath := filepath.Join(hugoContentDirectory, folder.Name())
 
 			// create the hugo folder if it doesn't exist
 			err := os.MkdirAll(hugoContentFolderPath, 0777)
@@ -53,7 +52,15 @@ func main() {
 
 			for _, file := range files {
 				if !file.IsDir() {
-					header := "+++ \n date = \"2015-10-15\" \n title = \"" + file.Name() + "\" \n+++"
+					splitName := strings.Split(file.Name(), ".")
+
+					fileName := splitName[0]
+
+					cleanedName, _ := cleanName(fileName)
+
+					fmt.Println(cleanedName)
+
+					header := "+++ \n date = \"" + string(file.ModTime().Format(time.UnixDate)) + "\" \n title = \"" + fileName + "\" \n+++"
 
 					indexedFilePath := filepath.Join(fullFolderPath, file.Name())
 
@@ -65,7 +72,7 @@ func main() {
 					concatFile := header + "\n \n" + string(readFile)
 
 					tmpFilePath := filepath.Join(folder.Name(), file.Name())
-					fullFilePath := filepath.Join(*hugoContentDirectory, tmpFilePath)
+					fullFilePath := filepath.Join(hugoContentDirectory, tmpFilePath)
 
 					// create the file
 					_, err = os.Create(fullFilePath)
@@ -84,4 +91,15 @@ func main() {
 	}
 
 	fmt.Println("All Done =]")
+}
+
+func cleanName(name string) (string, error) {
+	wordLength := len(name)
+
+	for i := 0; i < wordLength; i++ {
+		letter := string([]rune(name)[i])
+		fmt.Println(letter)
+	}
+
+	return "", nil
 }

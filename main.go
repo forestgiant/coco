@@ -78,16 +78,16 @@ func main() {
 						concatFile := header + "\n \n" + string(readFile)
 
 						tmpFilePath := filepath.Join(folder.Name(), file.Name())
-						fullFilePath := filepath.Join(hugoContentDirectory, tmpFilePath)
+						hugoFilePath := filepath.Join(hugoContentDirectory, tmpFilePath)
 
 						// create the file
-						_, err = os.Create(fullFilePath)
+						_, err = os.Create(hugoFilePath)
 						if err != nil {
 							fmt.Println(err)
 						}
 
 						// write the file
-						err = ioutil.WriteFile(fullFilePath, []byte(concatFile), 0644)
+						err = ioutil.WriteFile(hugoFilePath, []byte(concatFile), 0644)
 						if err != nil {
 							fmt.Println(err)
 						}

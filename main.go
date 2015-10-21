@@ -1,12 +1,14 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+	"unicode"
 )
 
 var (
@@ -56,9 +58,9 @@ func main() {
 
 					fileName := splitName[0]
 
-					// cleanedName, _ := cleanName(fileName)
+					cleanedName := addSpace(fileName)
 
-					header := "+++ \n date = \"" + string(file.ModTime().Format(time.UnixDate)) + "\" \n title = \"" + fileName + "\" \n+++"
+					header := "+++ \n date = \"" + string(file.ModTime().Format(time.UnixDate)) + "\" \n title = \"" + cleanedName + "\" \n+++"
 
 					indexedFilePath := filepath.Join(fullFolderPath, file.Name())
 
@@ -91,13 +93,14 @@ func main() {
 	fmt.Println("All Done =]")
 }
 
-// func cleanName(name string) (string, error) {
-// 	wordLength := len(name)
-
-// 	for i := 0; i < wordLength; i++ {
-// 		letter := string([]rune(name)[i])
-// 		fmt.Println(letter)
-// 	}
-
-// 	return "", nil
-// }
+func addSpace(s string) string {
+	buf := &bytes.Buffer{}
+	for _, rune := range s {
+		if unicode.IsUpper(rune) {
+			buf.WriteRune(' ')
+		}
+		buf.WriteRune(rune)
+	}
+	b := bytes.TrimSpace(buf.Bytes())
+	return string(b)
+}

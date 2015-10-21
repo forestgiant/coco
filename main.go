@@ -61,13 +61,11 @@ func main() {
 					if !file.IsDir() {
 						// Create the sanitized title
 						// from the file name
-						splitName := strings.Split(file.Name(), ".")
-						fileName := splitName[0]
-						cleanedName := addSpace(fileName)
+						sanitizedTitle := sanitizeTitle(file.Name())
 
 						// Header added at the top of
 						// every Hugo page
-						header := "+++ \n date = \"" + string(file.ModTime().Format(time.UnixDate)) + "\" \n title = \"" + cleanedName + "\" \n+++"
+						header := "+++ \n date = \"" + string(file.ModTime().Format(time.UnixDate)) + "\" \n title = \"" + sanitizedTitle + "\" \n+++"
 
 						// Get the file path and read it
 						indexedFilePath := filepath.Join(fullFolderPath, file.Name())
@@ -104,6 +102,12 @@ func main() {
 	<-exit
 
 	fmt.Println("All done =]")
+}
+
+func sanitizeTitle(s string) string {
+	splitName := strings.Split(s, ".")
+	fileName := splitName[0]
+	return addSpace(fileName)
 }
 
 func addSpace(s string) string {

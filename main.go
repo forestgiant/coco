@@ -20,6 +20,9 @@ func main() {
 	// Create wait group for run function
 	var wg sync.WaitGroup
 
+	// Create wait group for createFile function
+	var fwg sync.WaitGroup
+
 	// Quick valildation
 	if contentDirectory == "" {
 		fmt.Println("Please provide a content directory")
@@ -42,7 +45,7 @@ func main() {
 	for _, folder := range folders {
 		if folder.IsDir() {
 			wg.Add(1)
-			go run(folder, contentDirectory, hugoContentDirectory, &wg)
+			go run(folder, contentDirectory, hugoContentDirectory, &wg, &fwg)
 			wg.Wait()
 		}
 	}
@@ -50,7 +53,7 @@ func main() {
 	fmt.Println("All done =]")
 }
 
-func run(folder os.FileInfo, contentDirectory, hugoContentDirectory string, wg *sync.WaitGroup) {
+func run(folder os.FileInfo, contentDirectory, hugoContentDirectory string, wg, fwg *sync.WaitGroup) {
 	defer wg.Done()
 
 	// Open the indexed folder and get all the files inside of it
@@ -71,39 +74,46 @@ func run(folder os.FileInfo, contentDirectory, hugoContentDirectory string, wg *
 
 	for _, file := range files {
 		if !file.IsDir() {
-			// Create the sanitized title
-			// from the file name
-			sanitizedTitle := sanitizeTitle(file.Name())
-
-			// Header added at the top of
-			// every Hugo page
-			header := "+++ \n date = \"" + string(file.ModTime().Format(time.UnixDate)) + "\" \n title = \"" + sanitizedTitle + "\" \n+++"
-
-			// Get the file path and read it
-			indexedFilePath := filepath.Join(indexedFolderPath, file.Name())
-			readFile, err := ioutil.ReadFile(indexedFilePath)
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			// Add the header to the file
-			concatFile := header + "\n \n" + string(readFile)
-
-			tmpFilePath := filepath.Join(folder.Name(), file.Name())
-			hugoFilePath := filepath.Join(hugoContentDirectory, tmpFilePath)
-
-			// create the file
-			_, err = os.Create(hugoFilePath)
-			if err != nil {
-				fmt.Println(err)
-			}
-
-			// write the file
-			err = ioutil.WriteFile(hugoFilePath, []byte(concatFile), 0644)
-			if err != nil {
-				fmt.Println(err)
-			}
+			fwg.Add(1)
+			go createFile(file, folder, indexedFolderPath, hugoContentDirectory, fwg)
+			fwg.Wait()
 		}
+	}
+}
+
+func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirectory string, wg *sync.WaitGroup) {
+	defer wg.Done()
+	// Create the sanitized title
+	// from the file name
+	sanitizedTitle := sanitizeTitle(file.Name())
+
+	// Header added at the top of
+	// every Hugo page
+	header := "+++ \n date = \"" + string(file.ModTime().Format(time.UnixDate)) + "\" \n title = \"" + sanitizedTitle + "\" \n+++"
+
+	// Get the file path and read it
+	indexedFilePath := filepath.Join(indexedFolderPath, file.Name())
+	readFile, err := ioutil.ReadFile(indexedFilePath)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// Add the header to the file
+	concatFile := header + "\n \n" + string(readFile)
+
+	tmpFilePath := filepath.Join(folder.Name(), file.Name())
+	hugoFilePath := filepath.Join(hugoContentDirectory, tmpFilePath)
+
+	// create the file
+	_, err = os.Create(hugoFilePath)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// write the file
+	err = ioutil.WriteFile(hugoFilePath, []byte(concatFile), 0644)
+	if err != nil {
+		fmt.Println(err)
 	}
 }
 

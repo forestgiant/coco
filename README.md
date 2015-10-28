@@ -18,3 +18,18 @@ Now run `go install` and md-hugo should be installed on your computer. To run it
 md-hugo /path/to/process/folder /path/to/hugo/contents/folder
 ```
 
+### If you DO NOT have `go` installed
+
+You can just run the binary so clone the repo and cd into it:
+
+``` bash
+git pull https://github.com/forestgiant/md-hugo.git
+
+cd md-hugo
+```
+
+Now just run `md-hugo` like this:
+
+``` bash
+./md-hugo /path/to/process/folder /path/to/hugo/contents/folder
+```

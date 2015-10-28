@@ -13,7 +13,6 @@ import (
 )
 
 func main() {
-
 	contentDirectory := os.Args[1]
 	hugoContentDirectory := os.Args[2]
 
@@ -89,7 +88,7 @@ func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirector
 
 	// Header added at the top of
 	// every Hugo page
-	header := "+++ \n date = \"" + string(file.ModTime().Format(time.UnixDate)) + "\" \n title = \"" + sanitizedTitle + "\" \n+++"
+	header := "+++ \ndate = \"" + string(file.ModTime().Format(time.RFC3339)) + "\" \ntitle = \"" + sanitizedTitle + "\" \n\n+++"
 
 	// Get the file path and read it
 	indexedFilePath := filepath.Join(indexedFolderPath, file.Name())

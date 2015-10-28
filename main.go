@@ -2,9 +2,12 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
@@ -12,9 +15,16 @@ import (
 	"unicode"
 )
 
+var (
+	pushPtr = flag.Bool("push", false, "to push or not to push")
+)
+
 func main() {
-	contentDirectory := os.Args[1]
-	hugoContentDirectory := os.Args[2]
+
+	flag.Parse()
+
+	contentDirectory := flag.Args()[0]
+	hugoContentDirectory := flag.Args()[1]
 
 	// Create wait group for run function
 	var wg sync.WaitGroup
@@ -46,6 +56,29 @@ func main() {
 			wg.Add(1)
 			go run(folder, contentDirectory, hugoContentDirectory, &wg, &fwg)
 			wg.Wait()
+		}
+	}
+
+	if *pushPtr == true {
+		mainHugoFolderPath := hugoContentDirectory + "/.."
+
+		if err := os.Chdir(mainHugoFolderPath); err != nil {
+			log.Print("Error switching directories", err)
+		}
+
+		cmd := exec.Command("git", "add", ".")
+		if err := cmd.Run(); err != nil {
+			log.Fatal(err)
+		}
+
+		cmd = exec.Command("git", "commit", "-m=\"update site\"")
+		if err := cmd.Run(); err != nil {
+			log.Fatal(err)
+		}
+
+		cmd = exec.Command("git", "push")
+		if err := cmd.Run(); err != nil {
+			log.Fatal(err)
 		}
 	}
 

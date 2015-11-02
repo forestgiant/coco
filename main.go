@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"sync"
 	"time"
@@ -134,8 +135,16 @@ func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirector
 			fmt.Println(err)
 		}
 
+		re := regexp.MustCompile("https://github.com/forestgiant/process/blob/master")
+
+		newLinks := re.ReplaceAll(readFile, []byte(""))
+
+		re = regexp.MustCompile(".md")
+
+		newFile := re.ReplaceAll(newLinks, []byte(""))
+
 		// Add the header to the file
-		concatFile := header + "\n \n" + string(readFile)
+		concatFile := header + "\n \n" + string(newFile)
 
 		tmpFilePath := filepath.Join(folder.Name(), file.Name())
 		hugoFilePath := filepath.Join(hugoContentDirectory, tmpFilePath)

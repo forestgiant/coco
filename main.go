@@ -121,7 +121,7 @@ func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirector
 	defer wg.Done()
 	// Create the sanitized title
 	// from the file name
-	if file.Name() != "README.md" {
+	if file.Name() != "README.md" || file.Name() != "readme.md" {
 		sanitizedTitle := sanitizeTitle(file.Name())
 
 		// Header added at the top of

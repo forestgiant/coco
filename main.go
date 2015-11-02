@@ -35,12 +35,12 @@ func main() {
 	// Quick valildation
 	if contentDirectory == "" {
 		fmt.Println("Please provide a content directory")
-		os.Exit(1)
+		os.Exit(2)
 	}
 
 	if hugoContentDirectory == "" {
 		fmt.Println("Please provide a hugo content directory")
-		os.Exit(1)
+		os.Exit(2)
 	}
 
 	// Get the content direcotry
@@ -68,16 +68,19 @@ func main() {
 
 		cmd := exec.Command("git", "add", ".")
 		if err := cmd.Run(); err != nil {
+			fmt.Println("Could not add git", err)
 			log.Fatal(err)
 		}
 
-		cmd = exec.Command("git", "commit", "-m=\"update site\"")
-		if err := cmd.Run(); err != nil {
+		out, err := exec.Command("git", "commit", "-m=\"update site\"").Output()
+		if err != nil {
+			fmt.Println(string(out))
 			log.Fatal(err)
 		}
 
 		cmd = exec.Command("git", "push")
 		if err := cmd.Run(); err != nil {
+			fmt.Println("could not push", err)
 			log.Fatal(err)
 		}
 	}

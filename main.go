@@ -117,36 +117,39 @@ func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirector
 	defer wg.Done()
 	// Create the sanitized title
 	// from the file name
-	sanitizedTitle := sanitizeTitle(file.Name())
+	if file.Name() != "README.md" {
+		sanitizedTitle := sanitizeTitle(file.Name())
 
-	// Header added at the top of
-	// every Hugo page
-	header := "+++\ndate = \"" + string(file.ModTime().Format(time.RFC3339)) + "\"\ntitle = \"" + sanitizedTitle + "\"\n\n+++"
+		// Header added at the top of
+		// every Hugo page
+		header := "+++\ndate = \"" + string(file.ModTime().Format(time.RFC3339)) + "\"\ntitle = \"" + sanitizedTitle + "\"\n\n+++"
 
-	// Get the file path and read it
-	indexedFilePath := filepath.Join(indexedFolderPath, file.Name())
-	readFile, err := ioutil.ReadFile(indexedFilePath)
-	if err != nil {
-		fmt.Println(err)
+		// Get the file path and read it
+		indexedFilePath := filepath.Join(indexedFolderPath, file.Name())
+		readFile, err := ioutil.ReadFile(indexedFilePath)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// Add the header to the file
+		concatFile := header + "\n \n" + string(readFile)
+
+		tmpFilePath := filepath.Join(folder.Name(), file.Name())
+		hugoFilePath := filepath.Join(hugoContentDirectory, tmpFilePath)
+
+		// create the file
+		_, err = os.Create(hugoFilePath)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// write the file
+		err = ioutil.WriteFile(hugoFilePath, []byte(concatFile), 0644)
+		if err != nil {
+			fmt.Println(err)
+		}
 	}
 
-	// Add the header to the file
-	concatFile := header + "\n \n" + string(readFile)
-
-	tmpFilePath := filepath.Join(folder.Name(), file.Name())
-	hugoFilePath := filepath.Join(hugoContentDirectory, tmpFilePath)
-
-	// create the file
-	_, err = os.Create(hugoFilePath)
-	if err != nil {
-		fmt.Println(err)
-	}
-
-	// write the file
-	err = ioutil.WriteFile(hugoFilePath, []byte(concatFile), 0644)
-	if err != nil {
-		fmt.Println(err)
-	}
 }
 
 func sanitizeTitle(s string) string {

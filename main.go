@@ -126,7 +126,7 @@ func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirector
 
 		// Header added at the top of
 		// every Hugo page
-		header := "+++\ndate = \"" + string(file.ModTime().Format(time.RFC3339)) + "\"\ntitle = \"" + sanitizedTitle + "\"\n\n+++"
+		header := "+++\ndate = \"" + string(file.ModTime().Format(time.RFC3339)) + "\"\ntitle = \"" + sanitizedTitle + "\"\ncategories = [\"" + folder.Name() + "\"]\n\n+++"
 
 		// Get the file path and read it
 		indexedFilePath := filepath.Join(indexedFolderPath, file.Name())
@@ -137,7 +137,46 @@ func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirector
 
 		re := regexp.MustCompile("https://github.com/forestgiant/process/blob/master")
 
-		newLinks := re.ReplaceAll(readFile, []byte(""))
+		newLinks := re.ReplaceAll(readFile, []byte("/post"))
+
+		re = regexp.MustCompile(".md")
+
+		newFile := re.ReplaceAll(newLinks, []byte(""))
+
+		// Add the header to the file
+		concatFile := header + "\n \n" + string(newFile)
+
+		tmpFilePath := filepath.Join(folder.Name(), file.Name())
+		hugoFilePath := filepath.Join(hugoContentDirectory, tmpFilePath)
+
+		// create the file
+		_, err = os.Create(hugoFilePath)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		// write the file
+		err = ioutil.WriteFile(hugoFilePath, []byte(concatFile), 0644)
+		if err != nil {
+			fmt.Println(err)
+		}
+	} else {
+		sanitizedTitle := sanitizeTitle(file.Name())
+
+		// Header added at the top of
+		// every Hugo page
+		header := "+++\ndate = \"" + string(time.Now().Format(time.RFC3339)) + "\"\ntitle = \"" + sanitizedTitle + "\"\ncategories = [\"" + folder.Name() + "\"]\n\n+++"
+
+		// Get the file path and read it
+		indexedFilePath := filepath.Join(indexedFolderPath, file.Name())
+		readFile, err := ioutil.ReadFile(indexedFilePath)
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		re := regexp.MustCompile("https://github.com/forestgiant/process/blob/master")
+
+		newLinks := re.ReplaceAll(readFile, []byte("/post"))
 
 		re = regexp.MustCompile(".md")
 

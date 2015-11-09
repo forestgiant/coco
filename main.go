@@ -56,9 +56,10 @@ func main() {
 		if folder.IsDir() {
 			wg.Add(1)
 			go run(folder, contentDirectory, hugoContentDirectory, &wg, &fwg)
-			wg.Wait()
 		}
 	}
+
+	wg.Wait()
 
 	if *pushPtr == true {
 		mainHugoFolderPath := hugoContentDirectory + "/.."
@@ -112,9 +113,10 @@ func run(folder os.FileInfo, contentDirectory, hugoContentDirectory string, wg, 
 		if !file.IsDir() {
 			fwg.Add(1)
 			go createFile(file, folder, indexedFolderPath, hugoContentDirectory, fwg)
-			fwg.Wait()
 		}
 	}
+
+	fwg.Wait()
 }
 
 func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirectory string, wg *sync.WaitGroup) {

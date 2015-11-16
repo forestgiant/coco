@@ -137,13 +137,23 @@ func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirector
 			fmt.Println(err)
 		}
 
-		re := regexp.MustCompile("https://github.com/forestgiant/process/blob/master")
+		re := regexp.MustCompile(`\([a-zA-Z]+.md\)`)
 
-		newLinks := re.ReplaceAll(readFile, []byte("/post"))
+		links := re.FindAll(readFile, -1)
+
+		var newLink []byte
+
+		for _, link := range links {
+			cleanedLink := strings.Split(string(link), "(")
+			fullLink := "/post/" + folder.Name() + "/" + cleanedLink[1]
+
+			re = regexp.MustCompile(string(link))
+			newLink = re.ReplaceAll(readFile, []byte(fullLink))
+		}
 
 		re = regexp.MustCompile(".md")
 
-		newFile := re.ReplaceAll(newLinks, []byte(""))
+		newFile := re.ReplaceAll(newLink, []byte(""))
 
 		// Add the header to the file
 		concatFile := header + "\n \n" + string(newFile)
@@ -163,11 +173,10 @@ func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirector
 			fmt.Println(err)
 		}
 	} else {
-		sanitizedTitle := sanitizeTitle(file.Name())
 
 		// Header added at the top of
 		// every Hugo page
-		header := "+++\ndate = \"" + string(time.Now().Format(time.RFC3339)) + "\"\ntitle = \"" + sanitizedTitle + "\"\ncategories = [\"" + folder.Name() + "\"]\n\n+++"
+		header := "+++\ndate = \"" + string(time.Now().Format(time.RFC3339)) + "\"\ntitle = \"" + strings.Title(folder.Name()) + " - Table of Contents\"\ncategories = [\"" + folder.Name() + "\"]\n\n+++"
 
 		// Get the file path and read it
 		indexedFilePath := filepath.Join(indexedFolderPath, file.Name())
@@ -176,13 +185,23 @@ func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirector
 			fmt.Println(err)
 		}
 
-		re := regexp.MustCompile("https://github.com/forestgiant/process/blob/master")
+		re := regexp.MustCompile(`\([a-zA-Z]+.md\)`)
 
-		newLinks := re.ReplaceAll(readFile, []byte("/post"))
+		links := re.FindAll(readFile, -1)
+
+		var newLink []byte
+
+		for _, link := range links {
+			cleanedLink := strings.Split(string(link), "(")
+			fullLink := "/post/" + folder.Name() + "/" + cleanedLink[1]
+
+			re = regexp.MustCompile(string(link))
+			newLink = re.ReplaceAll(readFile, []byte(fullLink))
+		}
 
 		re = regexp.MustCompile(".md")
 
-		newFile := re.ReplaceAll(newLinks, []byte(""))
+		newFile := re.ReplaceAll(newLink, []byte(""))
 
 		// Add the header to the file
 		concatFile := header + "\n \n" + string(newFile)

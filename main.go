@@ -117,6 +117,7 @@ func run(folder os.FileInfo, contentDirectory, hugoContentDirectory string, wg, 
 	}
 
 	fwg.Wait()
+
 }
 
 func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirectory string, wg *sync.WaitGroup) {
@@ -141,19 +142,23 @@ func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirector
 
 		links := re.FindAll(readFile, -1)
 
-		var newLink []byte
+		var newFile []byte
+		newFile = readFile
+
+		RemoveDuplicates(&links)
 
 		for _, link := range links {
 			cleanedLink := strings.Split(string(link), "(")
-			fullLink := "/post/" + folder.Name() + "/" + cleanedLink[1]
+			cleanedLink = strings.Split(cleanedLink[1], ")")
+			fullLink := "/post/" + folder.Name() + "/" + cleanedLink[0]
 
 			re = regexp.MustCompile(string(link))
-			newLink = re.ReplaceAll(readFile, []byte(fullLink))
+			newFile = re.ReplaceAll(newFile, []byte(fullLink))
 		}
 
 		re = regexp.MustCompile(".md")
 
-		newFile := re.ReplaceAll(newLink, []byte(""))
+		newFile = re.ReplaceAll(newFile, []byte(""))
 
 		// Add the header to the file
 		concatFile := header + "\n \n" + string(newFile)
@@ -189,19 +194,23 @@ func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirector
 
 		links := re.FindAll(readFile, -1)
 
-		var newLink []byte
+		var newFile []byte
+		newFile = readFile
+
+		RemoveDuplicates(&links)
 
 		for _, link := range links {
 			cleanedLink := strings.Split(string(link), "(")
-			fullLink := "/post/" + folder.Name() + "/" + cleanedLink[1]
+			cleanedLink = strings.Split(cleanedLink[1], ")")
+			fullLink := "/post/" + folder.Name() + "/" + cleanedLink[0]
 
 			re = regexp.MustCompile(string(link))
-			newLink = re.ReplaceAll(readFile, []byte(fullLink))
+			newFile = re.ReplaceAll(newFile, []byte(fullLink))
 		}
 
 		re = regexp.MustCompile(".md")
 
-		newFile := re.ReplaceAll(newLink, []byte(""))
+		newFile = re.ReplaceAll(newFile, []byte(""))
 
 		// Add the header to the file
 		concatFile := header + "\n \n" + string(newFile)
@@ -222,6 +231,19 @@ func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirector
 		}
 	}
 
+}
+
+func RemoveDuplicates(xs *[][]byte) {
+	found := make(map[string]bool)
+	j := 0
+	for i, x := range *xs {
+		if !found[string(x)] {
+			found[string(x)] = true
+			(*xs)[j] = (*xs)[i]
+			j++
+		}
+	}
+	*xs = (*xs)[:j]
 }
 
 func isReadme(file os.FileInfo) bool {

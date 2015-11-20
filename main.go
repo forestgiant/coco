@@ -114,7 +114,7 @@ func (c *Coco) createFile(file, folder os.FileInfo) {
 		c.generateFileContent(header, file, folder)
 	} else {
 		// Generate the header
-		header := generateHeader(strings.Title(folder.Name())+"- Table of Contents", folder.Name(), string(time.Now().Format(time.RFC3339)))
+		header := generateHeader(strings.Title(folder.Name())+" - Table of Contents", folder.Name(), string(time.Now().Format(time.RFC3339)))
 
 		// Generate the file content
 		c.generateFileContent(header, file, folder)

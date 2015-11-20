@@ -13,7 +13,7 @@ cd coco
 Now run `go install` and coco should be installed on your computer. To run it:
 
 ``` bash
- /path/to/process/folder /path/to/hugo/contents/folder
+ coco /path/to/process/folder /path/to/hugo/contents/folder
 ```
 
 If you want to automatically `push` the hugo website live you can pass in the `-push` flag

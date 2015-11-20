@@ -1,27 +1,27 @@
-# md-hugo
+# Coco
 Converts and moves Markdown files to Hugo content folders and adds meta data.
 
 ### If you have `go` installed
 
 Just do a git pull on this repo
-Then `cd` into `md-hugo`
+Then `cd` into `coco`
 
 ``` bash
-git pull https://github.com/forestgiant/md-hugo.git
+git pull git@github.com:forestgiant/coco.git
 
-cd md-hugo
+cd coco
 
 ```
-Now run `go install` and md-hugo should be installed on your computer. To run it:
+Now run `go install` and coco should be installed on your computer. To run it:
 
 ``` bash
-md-hugo /path/to/process/folder /path/to/hugo/contents/folder
+ /path/to/process/folder /path/to/hugo/contents/folder
 ```
 
 If you want to automatically `push` the hugo website live you can pass in the `-push` flag
 
 ``` bash
-md-hugo -push /path/to/process/folder /path/to/hugo/contents/folder
+coco -push /path/to/process/folder /path/to/hugo/contents/folder
 ```
 
 ### If you DO NOT have `go` installed
@@ -29,19 +29,19 @@ md-hugo -push /path/to/process/folder /path/to/hugo/contents/folder
 You can just run the binary so clone the repo and cd into it:
 
 ``` bash
-git pull https://github.com/forestgiant/md-hugo.git
+git pull https://github.com/forestgiant/coco.git
 
-cd md-hugo
+cd coco
 ```
 
-Now just run `md-hugo` like this:
+Now just run `coco` like this:
 
 ``` bash
-./md-hugo /path/to/process/folder /path/to/hugo/contents/folder
+./coco /path/to/process/folder /path/to/hugo/contents/folder
 ```
 
 If you want to automatically `push` the hugo website live you can pass in the `-push` flag
 
 ``` bash
-./md-hugo -push /path/to/process/folder /path/to/hugo/contents/folder
+./coco -push /path/to/process/folder /path/to/hugo/contents/folder
 ```

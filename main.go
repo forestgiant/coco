@@ -37,9 +37,15 @@ func main() {
 	// version := "0.1.1"
 
 	// Validate the correct args were passed in
-	if len(flag.Args()) < 2 {
-		fmt.Println("Please pass in the required arguments")
-		os.Exit(1)
+	argsLen := len(flag.Args())
+	if argsLen < 2 {
+		if argsLen == 0 {
+			fmt.Println("Please pass in the process directory and the hugo content directory")
+			os.Exit(1)
+		} else if argsLen == 1 {
+			fmt.Println("Please pass in the hugo content directory")
+			os.Exit(1)
+		}
 	}
 
 	// Get the os args

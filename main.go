@@ -114,7 +114,7 @@ func (c *Coco) createFile(file, folder os.FileInfo) {
 		c.generateFileContent(header, file, folder)
 	} else {
 		// Generate the header
-		header := generateHeader(strings.Title(folder.Name()), folder.Name(), string(time.Now().Format(time.RFC3339)))
+		header := generateHeader(strings.Title(folder.Name())+"- Table of Contents", folder.Name(), string(time.Now().Format(time.RFC3339)))
 
 		// Generate the file content
 		c.generateFileContent(header, file, folder)
@@ -155,10 +155,6 @@ func (c *Coco) push() {
 	// The main Hugo src
 	mainHugoFolderPath := c.HugoDir + "/../.."
 
-	fmt.Println(mainHugoFolderPath)
-
-	os.Exit(1)
-
 	// Switch folder path to mainHugoFolderPath
 	if err := os.Chdir(mainHugoFolderPath); err != nil {
 		fmt.Println("Error switching directories", err)
@@ -172,16 +168,16 @@ func (c *Coco) push() {
 	}
 
 	// Run git commit
-	out, err := exec.Command("git", "commit", "-m=\"update site\"").Output()
+	out, err := exec.Command("git", "commit", "-mupdate site").Output()
 	if err != nil {
 		fmt.Println(string(out))
 		log.Fatal(err)
 	}
 
 	// Run git push
-	cmd = exec.Command("git", "push")
-	if err := cmd.Run(); err != nil {
-		fmt.Println("could not push", err)
+	out, err = exec.Command("git", "push").Output()
+	if err != nil {
+		fmt.Println(string(out))
 		log.Fatal(err)
 	}
 

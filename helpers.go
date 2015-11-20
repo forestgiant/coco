@@ -70,5 +70,5 @@ func removeDuplicates(xs *[][]byte) {
 }
 
 func generateHeader(title, category, date string) string {
-	return "+++\ndate = \"" + date + "\"\ntitle = \"" + title + " - Table of Contents\"\ncategories = [\"" + category + "\"]\n\n+++"
+	return "+++\ndate = \"" + date + "\"\ntitle = \"" + title + "\"\ncategories = [\"" + category + "\"]\n\n+++"
 }

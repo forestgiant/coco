@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -9,264 +8,198 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"sync"
 	"time"
-	"unicode"
 )
 
+// Coco has the folder paths needed
+// to generate the necessary Hugo files
+type Coco struct {
+	// The process directory
+	ProcessDir string
+	// The hugo directory
+	HugoDir string
+	// The indexed folder inside of the process dir
+	ProcessIndexDir string
+	// The hugo content
+	HugoContentDir string
+}
+
 var (
-	pushPtr = flag.Bool("push", false, "to push or not to push")
+	pushPtr = flag.Bool("push", false, "push process site to github")
 )
 
 func main() {
-
+	// Parse the passed in flags and args
 	flag.Parse()
 
-	contentDirectory := flag.Args()[0]
-	hugoContentDirectory := flag.Args()[1]
+	// MD Hugo version
+	// version := "0.1.1"
 
-	// Create wait group for run function
-	var wg sync.WaitGroup
-
-	// Create wait group for createFile function
-	var fwg sync.WaitGroup
-
-	// Quick valildation
-	if contentDirectory == "" {
-		fmt.Println("Please provide a content directory")
-		os.Exit(2)
+	// Validate the correct args were passed in
+	if len(flag.Args()) < 2 {
+		fmt.Println("Please pass in the required arguments")
+		os.Exit(1)
 	}
 
-	if hugoContentDirectory == "" {
-		fmt.Println("Please provide a hugo content directory")
-		os.Exit(2)
+	// Get the os args
+	processDirectory := flag.Args()[0]
+	hugoDirectory := flag.Args()[1]
+
+	// Instantiate a Coco
+	coco := &Coco{
+		ProcessDir: processDirectory,
+		HugoDir:    hugoDirectory,
 	}
 
-	// Get the content direcotry
-	// Get all of the folders inside of it
-	folders, err := ioutil.ReadDir(contentDirectory)
+	// Read the process directory
+	folders, err := ioutil.ReadDir(processDirectory)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Could not read process directory:", err)
 	}
+
+	// Create run waitgroup
+	var wg sync.WaitGroup
 
 	// Loop through each folder
 	for _, folder := range folders {
+		// check to make sure folder is a directory
 		if folder.IsDir() {
 			wg.Add(1)
-			go run(folder, contentDirectory, hugoContentDirectory, &wg, &fwg)
+			go coco.run(folder, &wg)
 		}
 	}
 
+	// Wait for run goroutine to finish
 	wg.Wait()
 
+	// Push process website to GitHub
 	if *pushPtr == true {
-		mainHugoFolderPath := hugoContentDirectory + "/.."
-
-		if err := os.Chdir(mainHugoFolderPath); err != nil {
-			log.Print("Error switching directories", err)
-		}
-
-		cmd := exec.Command("git", "add", ".")
-		if err := cmd.Run(); err != nil {
-			fmt.Println("Could not add git", err)
-			log.Fatal(err)
-		}
-
-		out, err := exec.Command("git", "commit", "-m=\"update site\"").Output()
-		if err != nil {
-			fmt.Println(string(out))
-			log.Fatal(err)
-		}
-
-		cmd = exec.Command("git", "push")
-		if err := cmd.Run(); err != nil {
-			fmt.Println("could not push", err)
-			log.Fatal(err)
-		}
+		coco.push()
 	}
 
 	fmt.Println("All done =]")
 }
 
-func run(folder os.FileInfo, contentDirectory, hugoContentDirectory string, wg, fwg *sync.WaitGroup) {
+func (c *Coco) run(folder os.FileInfo, wg *sync.WaitGroup) {
 	defer wg.Done()
 
-	// Open the indexed folder and get all the files inside of it
-	indexedFolderPath := filepath.Join(contentDirectory, folder.Name())
-	hugoContentFolderPath := filepath.Join(hugoContentDirectory, folder.Name())
+	// Set up the folder paths
+	c.ProcessIndexDir = filepath.Join(c.ProcessDir, folder.Name())
+	c.HugoContentDir = filepath.Join(c.HugoDir, folder.Name())
 
-	// create the hugo folder if it doesn't exist
-	err := os.MkdirAll(hugoContentFolderPath, 0777)
-	if err != nil {
-		fmt.Println(err)
+	// Create the folder in Hugo if it does not exist
+	if err := os.MkdirAll(c.HugoContentDir, 0777); err != nil {
+		fmt.Println("Error creating folder in hugo content:", err)
 	}
 
-	// get all the files inside the indexed folder
-	files, err := ioutil.ReadDir(indexedFolderPath)
+	// Read the processIndexDir
+	files, err := ioutil.ReadDir(c.ProcessIndexDir)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error reading process index directory:", err)
 	}
 
+	// Make createFile waitgroup
+	var fwg sync.WaitGroup
+
+	// Loop through each folder/file in processIndexDir
 	for _, file := range files {
+		// Make sure its a file
 		if !file.IsDir() {
 			fwg.Add(1)
-			go createFile(file, folder, indexedFolderPath, hugoContentDirectory, fwg)
+			go c.createFile(file, folder, &fwg)
 		}
 	}
 
+	// Wait for createFile go routines to finish
 	fwg.Wait()
-
 }
 
-func createFile(file, folder os.FileInfo, indexedFolderPath, hugoContentDirectory string, wg *sync.WaitGroup) {
-	defer wg.Done()
-	// Create the sanitized title
-	// from the file name
-	if !isReadme(file) {
+func (c *Coco) createFile(file, folder os.FileInfo, fwg *sync.WaitGroup) {
+	defer fwg.Done()
+
+	// Check if it's the README.md file
+	if !isReadme(file.Name()) {
+		// Sanitize title
 		sanitizedTitle := sanitizeTitle(file.Name())
 
-		// Header added at the top of
-		// every Hugo page
-		header := "+++\ndate = \"" + string(file.ModTime().Format(time.RFC3339)) + "\"\ntitle = \"" + sanitizedTitle + "\"\ncategories = [\"" + folder.Name() + "\"]\n\n+++"
+		// Generate the header
+		header := generateHeader(sanitizedTitle, folder.Name(), string(file.ModTime().Format(time.RFC3339)))
 
-		// Get the file path and read it
-		indexedFilePath := filepath.Join(indexedFolderPath, file.Name())
-		readFile, err := ioutil.ReadFile(indexedFilePath)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		re := regexp.MustCompile(`\([a-zA-Z]+.md\)`)
-
-		links := re.FindAll(readFile, -1)
-
-		var newFile []byte
-		newFile = readFile
-
-		RemoveDuplicates(&links)
-
-		for _, link := range links {
-			cleanedLink := strings.Split(string(link), "(")
-			cleanedLink = strings.Split(cleanedLink[1], ")")
-			fullLink := "/post/" + folder.Name() + "/" + cleanedLink[0]
-
-			re = regexp.MustCompile(string(link))
-			newFile = re.ReplaceAll(newFile, []byte(fullLink))
-		}
-
-		re = regexp.MustCompile(".md")
-
-		newFile = re.ReplaceAll(newFile, []byte(""))
-
-		// Add the header to the file
-		concatFile := header + "\n \n" + string(newFile)
-
-		tmpFilePath := filepath.Join(folder.Name(), file.Name())
-		hugoFilePath := filepath.Join(hugoContentDirectory, tmpFilePath)
-
-		// create the file
-		_, err = os.Create(hugoFilePath)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		// write the file
-		err = ioutil.WriteFile(hugoFilePath, []byte(concatFile), 0644)
-		if err != nil {
-			fmt.Println(err)
-		}
+		// Generate the file content
+		c.generateFileContent(header, file, folder)
 	} else {
+		// Generate the header
+		header := generateHeader(strings.Title(folder.Name()), folder.Name(), string(time.Now().Format(time.RFC3339)))
 
-		// Header added at the top of
-		// every Hugo page
-		header := "+++\ndate = \"" + string(time.Now().Format(time.RFC3339)) + "\"\ntitle = \"" + strings.Title(folder.Name()) + " - Table of Contents\"\ncategories = [\"" + folder.Name() + "\"]\n\n+++"
-
-		// Get the file path and read it
-		indexedFilePath := filepath.Join(indexedFolderPath, file.Name())
-		readFile, err := ioutil.ReadFile(indexedFilePath)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		re := regexp.MustCompile(`\([a-zA-Z]+.md\)`)
-
-		links := re.FindAll(readFile, -1)
-
-		var newFile []byte
-		newFile = readFile
-
-		RemoveDuplicates(&links)
-
-		for _, link := range links {
-			cleanedLink := strings.Split(string(link), "(")
-			cleanedLink = strings.Split(cleanedLink[1], ")")
-			fullLink := "/post/" + folder.Name() + "/" + cleanedLink[0]
-
-			re = regexp.MustCompile(string(link))
-			newFile = re.ReplaceAll(newFile, []byte(fullLink))
-		}
-
-		re = regexp.MustCompile(".md")
-
-		newFile = re.ReplaceAll(newFile, []byte(""))
-
-		// Add the header to the file
-		concatFile := header + "\n \n" + string(newFile)
-
-		tmpFilePath := filepath.Join(folder.Name(), file.Name())
-		hugoFilePath := filepath.Join(hugoContentDirectory, tmpFilePath)
-
-		// create the file
-		_, err = os.Create(hugoFilePath)
-		if err != nil {
-			fmt.Println(err)
-		}
-
-		// write the file
-		err = ioutil.WriteFile(hugoFilePath, []byte(concatFile), 0644)
-		if err != nil {
-			fmt.Println(err)
-		}
+		// Generate the file content
+		c.generateFileContent(header, file, folder)
 	}
-
 }
 
-func RemoveDuplicates(xs *[][]byte) {
-	found := make(map[string]bool)
-	j := 0
-	for i, x := range *xs {
-		if !found[string(x)] {
-			found[string(x)] = true
-			(*xs)[j] = (*xs)[i]
-			j++
-		}
-	}
-	*xs = (*xs)[:j]
-}
-
-func isReadme(file os.FileInfo) bool {
-	if file.Name() == "README.md" || file.Name() == "readme.md" {
-		return true
+func (c *Coco) generateFileContent(header string, file, folder os.FileInfo) {
+	// Get the filepath and read it
+	processFilePath := filepath.Join(c.ProcessIndexDir, file.Name())
+	readFile, err := ioutil.ReadFile(processFilePath)
+	if err != nil {
+		fmt.Println("Error reading process file:", err)
 	}
 
-	return false
-}
+	// Update the links to work with site
+	updatedFile := updateLinks(readFile, folder)
 
-func sanitizeTitle(s string) string {
-	splitName := strings.Split(s, ".")
-	fileName := splitName[0]
-	return addSpace(fileName)
-}
+	// Add the header to the file
+	cleanedFile := header + "\n\n" + string(updatedFile)
 
-func addSpace(s string) string {
-	buf := &bytes.Buffer{}
-	for i, rune := range s {
-		if unicode.IsUpper(rune) && i > 0 {
-			buf.WriteRune(' ')
-		}
-		buf.WriteRune(rune)
+	tmpFilePath := filepath.Join(folder.Name(), file.Name())
+	hugoFilePath := filepath.Join(c.HugoDir, tmpFilePath)
+
+	// create the file
+	_, err = os.Create(hugoFilePath)
+	if err != nil {
+		fmt.Println(err)
 	}
-	return buf.String()
+
+	// write the file
+	err = ioutil.WriteFile(hugoFilePath, []byte(cleanedFile), 0644)
+	if err != nil {
+		fmt.Println("Error writing file:", err)
+	}
+}
+
+func (c *Coco) push() {
+	// The main Hugo src
+	mainHugoFolderPath := c.HugoDir + "/../.."
+
+	fmt.Println(mainHugoFolderPath)
+
+	os.Exit(1)
+
+	// Switch folder path to mainHugoFolderPath
+	if err := os.Chdir(mainHugoFolderPath); err != nil {
+		fmt.Println("Error switching directories", err)
+	}
+
+	// Run git add .
+	cmd := exec.Command("git", "add", ".")
+	if err := cmd.Run(); err != nil {
+		fmt.Println("Could not add git", err)
+		log.Fatal(err)
+	}
+
+	// Run git commit
+	out, err := exec.Command("git", "commit", "-m=\"update site\"").Output()
+	if err != nil {
+		fmt.Println(string(out))
+		log.Fatal(err)
+	}
+
+	// Run git push
+	cmd = exec.Command("git", "push")
+	if err := cmd.Run(); err != nil {
+		fmt.Println("could not push", err)
+		log.Fatal(err)
+	}
+
 }

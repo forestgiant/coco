@@ -9,7 +9,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -59,20 +58,13 @@ func main() {
 		fmt.Println("Could not read process directory:", err)
 	}
 
-	// Create run waitgroup
-	var wg sync.WaitGroup
-
 	// Loop through each folder
 	for _, folder := range folders {
 		// check to make sure folder is a directory
 		if folder.IsDir() {
-			wg.Add(1)
-			go coco.run(folder, &wg)
+			coco.run(folder)
 		}
 	}
-
-	// Wait for run goroutine to finish
-	wg.Wait()
 
 	// Push process website to GitHub
 	if *pushPtr == true {
@@ -82,8 +74,7 @@ func main() {
 	fmt.Println("All done =]")
 }
 
-func (c *Coco) run(folder os.FileInfo, wg *sync.WaitGroup) {
-	defer wg.Done()
+func (c *Coco) run(folder os.FileInfo) {
 
 	// Set up the folder paths
 	c.ProcessIndexDir = filepath.Join(c.ProcessDir, folder.Name())
@@ -100,24 +91,16 @@ func (c *Coco) run(folder os.FileInfo, wg *sync.WaitGroup) {
 		fmt.Println("Error reading process index directory:", err)
 	}
 
-	// Make createFile waitgroup
-	var fwg sync.WaitGroup
-
 	// Loop through each folder/file in processIndexDir
 	for _, file := range files {
 		// Make sure its a file
 		if !file.IsDir() {
-			fwg.Add(1)
-			go c.createFile(file, folder, &fwg)
+			c.createFile(file, folder)
 		}
 	}
-
-	// Wait for createFile go routines to finish
-	fwg.Wait()
 }
 
-func (c *Coco) createFile(file, folder os.FileInfo, fwg *sync.WaitGroup) {
-	defer fwg.Done()
+func (c *Coco) createFile(file, folder os.FileInfo) {
 
 	// Check if it's the README.md file
 	if !isReadme(file.Name()) {

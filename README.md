@@ -1,7 +1,7 @@
 # Coco
 Converts and moves Markdown files to Hugo content folders and adds meta data.
 
-Just do a git pull on this repo
+Just do a `git clone` on this repo
 Then `cd` into `coco`
 
 ``` bash
